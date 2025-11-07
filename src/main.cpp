@@ -12,6 +12,13 @@ struct termios orig_termios;
 int kmh = 0;
 const int min_kmh = 0;
 const int max_kmh = 200;
+
+const int sw_angle_min = -540;
+const int sw_angle_max = 540;
+int sw_angle = 0;
+
+float wheel_angle = 0;
+
 char key;
 
 void set_raw_mode(){
@@ -46,7 +53,30 @@ int speed() {
     }
     // Za kazdym wcisnieciem S, zmniejsz predkosc o 20.
     return kmh;
-} 
+}
+
+int steering() {
+    // Za kazdym wcisnieciem D, skrec kierownice w prawo o 10 stopni.
+    if (key == 'd') {
+        sw_angle += 10;
+        if (sw_angle > sw_angle_max) {
+            sw_angle = sw_angle_max;
+        }
+    } else if (key == 'a') {
+        sw_angle -= 10;
+    } if (sw_angle < sw_angle_min) {
+        sw_angle = sw_angle_min;
+    }
+    // Za kazdym wcisnieciem A, skrec kierownice w lewo o 10 stopni.
+
+    return sw_angle;
+}
+
+float wheels() {
+    wheel_angle = sw_angle / 36; // Przeliczanie polozenia kierwonicy na, polozenie kol.
+
+    return wheel_angle;
+}
 
 
 
@@ -57,7 +87,11 @@ int main(){
         key = take_user_input();
         cout << "\033[2J\033[H"; // ANSI Escape, czysci terminal.
         kmh = speed();
-        cout << "Your speed is: " << kmh << endl;
+        sw_angle = steering();
+        wheel_angle = wheels();
+        cout << "Your speed is: " << kmh << "km/h\n"
+        << "Steering wheel angle is: " << sw_angle << "°\n"
+        << "Wheels angle is: " << wheel_angle << "°" << endl;
     } while (key != ('.'));
     reset_terminal();
 
