@@ -14,11 +14,17 @@ Stworz funckje ktora bedzie obliczala hamowanie pojazdu, zakladajac ze z 100km/h
 
 Dodaj funkcje skrecania kol, zakladajac ze pelny obrot kierownicy o 360 stopni zajmuje 2s, a kola skrecaja sie maksymalnie o 45 po wykonaniu 540 stopni w jedna strone. +
 
-Dodaj funkcje kierunkowskazow. Z timeoutem i odswiezaniem ekranu co sekunde.
+Dodaj funkcje kierunkowskazow. .
 
 Dodaj zmiane biegow PRND, ogranicz predkosc na wstecznym do maks 30km/h.
 
 Dodaj zmiane biegow w skrzyni? Np, co iles km/h.
+
+Jezeli zaden z przyciskow nie bedzie wcisniety odswiezaj co sekunde.
+
+Licz przebyty dystans.
+
+
 
 
 To narazie tyle :D
