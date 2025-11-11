@@ -1,13 +1,8 @@
-#include <iostream>
-#include <termios.h>
-#include <unistd.h>
-#include <cstdlib>
-#include <chrono>
+#include <ncurses.h>
 #include <thread>
+#include <chrono>
 
 using namespace std;
-
-struct termios orig_termios;
 
 int kmh = 0;
 const int min_kmh = 0;
@@ -21,22 +16,11 @@ float wheel_angle = 0;
 
 char key;
 
-void set_raw_mode(){
-    tcgetattr(STDIN_FILENO, &orig_termios);
-    termios raw = orig_termios;
-    raw.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &raw);
-}
-
-char take_user_input(){
-    read(STDIN_FILENO, &key, 1);
-
-    return key;
-}
-
-void reset_terminal() {
-    tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
-}
+string turn;
+bool flashing_r = false;
+bool flashing_l = false;
+bool show_symbol = false;
+auto last_flash_time = std::chrono::steady_clock::now();
 
 int speed() {
     // Za kazdym wcisnieciem W, zwieksz predkosc o 10.
@@ -53,6 +37,12 @@ int speed() {
     }
     // Za kazdym wcisnieciem S, zmniejsz predkosc o 20.
     return kmh;
+}
+
+float wheels() {
+    wheel_angle = sw_angle / 36; // Przeliczanie polozenia kierwonicy na, polozenie kol.
+
+    return wheel_angle;
 }
 
 int steering() {
@@ -72,28 +62,64 @@ int steering() {
     return sw_angle;
 }
 
-float wheels() {
-    wheel_angle = sw_angle / 36; // Przeliczanie polozenia kierwonicy na, polozenie kol.
+string turn_indicator() {
+    if (key == 'q') {
+        flashing_l = !flashing_l;
+        // Wyłącz prawą migającą strzałkę, jeśli właczasz lewą (opcjonalnie)
+        if (flashing_l) flashing_r = false;
+    } else if (key == 'e') {
+        flashing_r = !flashing_r;
+        // Wyłącz lewą, jeśli właczasz prawą (opcjonalnie)
+        if (flashing_r) flashing_l = false;
+    }
 
-    return wheel_angle;
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_flash_time).count();
+
+    if (duration > 1000) {
+        if (flashing_l || flashing_r) {
+            show_symbol = !show_symbol; // Przełącz miganie (pokaz/ukryj)
+        } else {
+            show_symbol = false; // jeśli wyłączone, nie pokazuj nic
+        }
+        last_flash_time = now;
+    }
+
+    if (flashing_l && show_symbol) {
+        turn = "<-";
+    } else if (flashing_r && show_symbol) {
+        turn = "->";
+    } else {
+        turn = " ";
+    }
+
+
+    return turn;
 }
 
 
-
-
 int main(){
-    set_raw_mode();
-    do {
-        key = take_user_input();
-        cout << "\033[2J\033[H"; // ANSI Escape, czysci terminal.
-        kmh = speed();
-        sw_angle = steering();
-        wheel_angle = wheels();
-        cout << "Your speed is: " << kmh << "km/h\n"
-        << "Steering wheel angle is: " << sw_angle << "°\n"
-        << "Wheels angle is: " << wheel_angle << "°" << endl;
-    } while (key != ('.'));
-    reset_terminal();
+    initscr();
+    noecho();
+    cbreak();
+    nodelay(stdscr, TRUE);
 
+    while (true) {
+        clear();
+        
+        key = getch();
+        if (key == 'w' or key == 's') speed();
+        if (key == 'a' or key == 'd') steering();
+        turn = turn_indicator();
+        wheel_angle = wheels();
+
+        printw("Your speed is: %d km/h\nSteering wheel angle is: %d°\nWheels angle is: %.1f°\nTurn indicator: %s", kmh, sw_angle, wheel_angle, turn.c_str());
+        refresh();
+
+        napms(10);
+    }
+    
+
+    endwin();
     return 0;
 }
