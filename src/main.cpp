@@ -1,30 +1,14 @@
 #include <ncurses.h>
 #include <thread>
 #include <chrono>
+#include <random>
+#include "engine.h"
+#include "gearbox.h"
+#include "car.h"
 
 using namespace std;
 
 char key;
-
-// Speed
-int kmh = 0;
-const int min_kmh = 0;
-const int max_kmh = 200;
-
-int gear;
-
-// SW
-const int sw_angle_min = -540;
-const int sw_angle_max = 540;
-int sw_angle = 0;
-float wheel_angle = 0;
-
-// Turn indicator 
-string turn;
-bool flashing_r = false;
-bool flashing_l = false;
-bool show_symbol = false;
-auto last_flash_time = std::chrono::steady_clock::now();
 
 int speed() {
     // Za kazdym wcisnieciem W, zwieksz predkosc o 1.
@@ -34,7 +18,7 @@ int speed() {
             kmh = max_kmh;
         }
     } else if (key == 's') {
-        kmh -= 2;
+        kmh -= 10;
         if (kmh < min_kmh) {
             kmh = min_kmh;
         }
@@ -66,7 +50,7 @@ int steering() {
     return sw_angle;
 }
 
-string turn_indicator() {
+string turn_indicator() {    
     if (key == 'q') {
         flashing_l = !flashing_l;
         if (flashing_l) flashing_r = false;
@@ -99,45 +83,120 @@ string turn_indicator() {
     return turn;
 }
 
-int gear_shift(){
-    if (kmh <= 20){
+
+
+int engine_rpm() {
+    static auto last_update_time = std::chrono::steady_clock::now();
+    static int rpm = 0;
+    
+    if (key == 'w' and engine) {
+    increase_rpm = true;
+    decrease_rpm = false;
+    } else if (!engine) {
+    decrease_rpm = false;
+    increase_rpm = false;
+    rpm = 0;
+    } else {
+        decrease_rpm = true;
+        increase_rpm = false;
+    }
+
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_update_time).count();
+
+    if (increase_rpm && duration > 10) {
+            rpm += distr2(gen);
+            last_update_time = now;
+            if (rpm > max_rpm) rpm = max_rpm;
+        } else if (decrease_rpm && duration > 100) {
+            rpm -= distr2(gen);
+            last_update_time = now;
+            if (rpm < distr1(gen)) rpm = distr1(gen);
+        }
+
+    return rpm;
+}
+
+int gear_shift() {
+    if (key == 'p') {
+        gear += 1;
+    } else if (key == 'l') {
+        gear -= 1;
+    }
+    
+    /* if (kmh <= 20){
         gear = 1;
-    } else if (kmh > 20 and kmh <= 50){
+    } else if (kmh > 20 and kmh <= 50 and rpm > 3500){
         gear = 2;
-    } else if (kmh > 50 and kmh <= 70){
+    } else if (kmh > 50 and kmh <= 70 and rpm > 3500){
         gear = 3;
-    } else if (kmh > 70 and kmh <= 100){
+    } else if (kmh > 70 and kmh <= 100 and rpm > 3500){
         gear = 4;
-    } else if (kmh > 100 and kmh <= 140){
+    } else if (kmh > 100 and kmh <= 140 and rpm > 3500){
         gear = 5;
     } else if (kmh > 140){
         gear = 6;
-    }
+    } */
 
     return gear;
 }
 
+bool engine_running() {
+    if (key == 'i') {
+        engine = !engine;
+    }
+
+    return engine;
+}
+
+double horsepower_to_watts(double hp){ // Napisz to swoim jezykiem tak zeby zrozumiec.
+    return hp * 735.5;
+}
+
+double engine_power_at_rpm(int rpm, int max_rpm, double max_hp){ // Napisz to swoim jezykiem tak zeby zrozumiec.
+    return max_hp * (double)rpm / max_rpm;
+}
+
+double acceleration(double power_hp, double velocity_m_s, double mass_kg) { // Napisz to swoim jezykiem tak zeby zrozumiec.
+    double power_w = horsepower_to_watts(power_hp);
+    if (velocity_m_s < 0.1) velocity_m_s = 0.1;
+    double force = power_w / velocity_m_s;
+    return force / mass_kg;
+}
+
 
 int main(){
+    int rpm;
     initscr();
     noecho();
     cbreak();
     nodelay(stdscr, TRUE);
+    curs_set(0);
 
     while (true) {
         clear();
         
         key = getch();
-        if (key == 'w' or key == 's') speed();
+        if (key == ERR) {
+        key = '\0'; // no key pressed
+        }
+        if (key == 's') speed();
         if (key == 'a' or key == 'd') steering();
+        if (key == 'i') engine_running(); // Turn ON or OFF the ignition.
         turn = turn_indicator();
         wheel_angle = wheels();
         gear = gear_shift();
+        rpm = engine_rpm();
+        double wheel_rpm = rpm / (gear_ratios[gear] * final_drive); // Napisz to swoim jezykiem tak zeby zrozumiec.
+        double wheel_speed_m_per_min = wheel_rpm * 2 * M_PI * wheel_radius; // Napisz to swoim jezykiem tak zeby zrozumiec.
+        double velocity_kmh = (wheel_speed_m_per_min / 1000.0) * 60.0; // Napisz to swoim jezykiem tak zeby zrozumiec.
+        kmh = velocity_kmh; // Napisz to swoim jezykiem tak zeby zrozumiec.
+        
 
-        printw("Your speed is: %d km/h\nSteering wheel angle is: %d°\nWheels angle is: %.1f°\nTurn indicator: %s\nGear: %d", kmh, sw_angle, wheel_angle, turn.c_str(), gear);
+        printw("Your speed is: %d km/h\nSteering wheel angle is: %d°\nWheels angle is: %.1f°\nTurn indicator: %s\nGear: %d\nRpm: %d\nEngine running: %s", kmh, sw_angle, wheel_angle, turn.c_str(), gear, rpm, engine ? "true" : "false"); // engine ? -> Przypisz string do true i false. 
         refresh();
 
-        napms(10);
+        napms(20); // Refresh time for the window
     }
     
 
