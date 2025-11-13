@@ -5,6 +5,10 @@ Cele:
     - S = Hamulec + 
     - A = Skret w lewo +
     - D = Skret w prawo +
+    - Q = Kierunkowskaz lewy
+    - P = Kierunkowskaz prawy
+    - Przejscie przez PRND w gore P
+    - Przejscie przez PRND w dol L
 
 Bierz pod uwage jak dlugo jest w cisniety dany klawisz. - 
 
@@ -14,17 +18,19 @@ Stworz funckje ktora bedzie obliczala hamowanie pojazdu, zakladajac ze z 100km/h
 
 Dodaj funkcje skrecania kol, zakladajac ze pelny obrot kierownicy o 360 stopni zajmuje 2s, a kola skrecaja sie maksymalnie o 45 po wykonaniu 540 stopni w jedna strone. +
 
-Dodaj funkcje kierunkowskazow. .
+Dodaj funkcje kierunkowskazow. + Z pomoca Perplexity
 
-Dodaj zmiane biegow PRND, ogranicz predkosc na wstecznym do maks 30km/h.
+Dodaj zmiane biegow PRND, ogranicz predkosc na wstecznym do maks 30km/h. -
 
-Dodaj zmiane biegow w skrzyni? Np, co iles km/h.
+Dodaj zmiane biegow w skrzyni? Np, co iles km/h. + 
 
-Jezeli zaden z przyciskow nie bedzie wcisniety odswiezaj co sekunde.
+Jezeli zaden z przyciskow nie bedzie wcisniety odswiezaj co sekunde. + Co 10ms.
 
 Licz przebyty dystans.
 
+Dodaj funkcje sterowania obrotami, z delikatna funkcja losowosci, falowanie obrotow limiter obrotow na 6.5k rpm. / Uzywaj tego do zmiany predkosci.
 
+Dodaj wyswietlanie obrotow, z kolorami. 
 
 
 To narazie tyle :D
