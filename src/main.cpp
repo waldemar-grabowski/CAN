@@ -4,18 +4,22 @@
 
 using namespace std;
 
+char key;
+
+// Speed
 int kmh = 0;
 const int min_kmh = 0;
 const int max_kmh = 200;
 
+int gear;
+
+// SW
 const int sw_angle_min = -540;
 const int sw_angle_max = 540;
 int sw_angle = 0;
-
 float wheel_angle = 0;
 
-char key;
-
+// Turn indicator 
 string turn;
 bool flashing_r = false;
 bool flashing_l = false;
@@ -23,19 +27,19 @@ bool show_symbol = false;
 auto last_flash_time = std::chrono::steady_clock::now();
 
 int speed() {
-    // Za kazdym wcisnieciem W, zwieksz predkosc o 10.
+    // Za kazdym wcisnieciem W, zwieksz predkosc o 1.
     if (key == 'w') {
-        kmh += 10;
+        kmh += 1;
         if (kmh > max_kmh) {
             kmh = max_kmh;
         }
     } else if (key == 's') {
-        kmh -= 20;
+        kmh -= 2;
         if (kmh < min_kmh) {
             kmh = min_kmh;
         }
     }
-    // Za kazdym wcisnieciem S, zmniejsz predkosc o 20.
+    // Za kazdym wcisnieciem S, zmniejsz predkosc o 2.
     return kmh;
 }
 
@@ -48,12 +52,12 @@ float wheels() {
 int steering() {
     // Za kazdym wcisnieciem D, skrec kierownice w prawo o 10 stopni.
     if (key == 'd') {
-        sw_angle += 10;
+        sw_angle += 5;
         if (sw_angle > sw_angle_max) {
             sw_angle = sw_angle_max;
         }
     } else if (key == 'a') {
-        sw_angle -= 10;
+        sw_angle -= 5;
     } if (sw_angle < sw_angle_min) {
         sw_angle = sw_angle_min;
     }
@@ -65,11 +69,9 @@ int steering() {
 string turn_indicator() {
     if (key == 'q') {
         flashing_l = !flashing_l;
-        // Wyłącz prawą migającą strzałkę, jeśli właczasz lewą (opcjonalnie)
         if (flashing_l) flashing_r = false;
     } else if (key == 'e') {
         flashing_r = !flashing_r;
-        // Wyłącz lewą, jeśli właczasz prawą (opcjonalnie)
         if (flashing_r) flashing_l = false;
     }
 
@@ -78,9 +80,9 @@ string turn_indicator() {
 
     if (duration > 1000) {
         if (flashing_l || flashing_r) {
-            show_symbol = !show_symbol; // Przełącz miganie (pokaz/ukryj)
+            show_symbol = !show_symbol; 
         } else {
-            show_symbol = false; // jeśli wyłączone, nie pokazuj nic
+            show_symbol = false; 
         }
         last_flash_time = now;
     }
@@ -95,6 +97,24 @@ string turn_indicator() {
 
 
     return turn;
+}
+
+int gear_shift(){
+    if (kmh <= 20){
+        gear = 1;
+    } else if (kmh > 20 and kmh <= 50){
+        gear = 2;
+    } else if (kmh > 50 and kmh <= 70){
+        gear = 3;
+    } else if (kmh > 70 and kmh <= 100){
+        gear = 4;
+    } else if (kmh > 100 and kmh <= 140){
+        gear = 5;
+    } else if (kmh > 140){
+        gear = 6;
+    }
+
+    return gear;
 }
 
 
@@ -112,8 +132,9 @@ int main(){
         if (key == 'a' or key == 'd') steering();
         turn = turn_indicator();
         wheel_angle = wheels();
+        gear = gear_shift();
 
-        printw("Your speed is: %d km/h\nSteering wheel angle is: %d°\nWheels angle is: %.1f°\nTurn indicator: %s", kmh, sw_angle, wheel_angle, turn.c_str());
+        printw("Your speed is: %d km/h\nSteering wheel angle is: %d°\nWheels angle is: %.1f°\nTurn indicator: %s\nGear: %d", kmh, sw_angle, wheel_angle, turn.c_str(), gear);
         refresh();
 
         napms(10);
